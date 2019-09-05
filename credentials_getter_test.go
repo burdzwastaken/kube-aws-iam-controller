@@ -27,7 +27,7 @@ func (sts *mockSTSAPI) AssumeRole(*sts.AssumeRoleInput) (*sts.AssumeRoleOutput, 
 
 func TestGet(t *testing.T) {
 	sess := session.New(&aws.Config{Region: aws.String("region")})
-	getter := NewSTSCredentialsGetter(sess, "")
+	getter := NewSTSCredentialsGetter(sess, "", "")
 	getter.svc = &mockSTSAPI{
 		err: nil,
 		assumeRoleResp: &sts.AssumeRoleOutput{
@@ -51,7 +51,8 @@ func TestGet(t *testing.T) {
 	getter.svc = &mockSTSAPI{
 		err: errors.New("failed"),
 	}
-	_, err = getter.Get(arnPrefix+"role", 3600*time.Second)
+	roleARNPrefix, err := GetPrefixFromARN(roleARN)
+	_, err = getter.Get(roleARNPrefix+"role", 3600*time.Second)
 	require.Error(t, err)
 }
 
@@ -88,7 +89,8 @@ func TestNormalizeRoleARN(tt *testing.T) {
 		},
 	} {
 		tt.Run(tc.msg, func(t *testing.T) {
-			normalized, err := normalizeRoleARN(tc.roleARN)
+			roleARNPrefix, err := GetPrefixFromARN(tc.roleARN)
+			normalized, err := normalizeRoleARN(tc.roleARN, roleARNPrefix)
 			require.NoError(t, err)
 			require.Equal(t, tc.expectedARN, normalized)
 		})
